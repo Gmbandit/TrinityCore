@@ -591,23 +591,24 @@ void PathGenerator::BuildPointPath(const float *startPoint, const float *endPoin
         return;
     }
 
-    // We are only going to use the path points that are 4yrds apart from each other as well as the final point to get a blizzlike result
-    uint32 splinePointCount = 1 + uint32(ceilf(pointCount / (float)SMOOTH_PATH_MULTIPLIER));
+    // We are only going to use the path points that are 4yrds apart from each other as well as the first and final point to get a blizzlike result
+    uint32 splinePointCount = 1 + (pointCount / SMOOTH_PATH_MULTIPLIER) + (pointCount % SMOOTH_PATH_MULTIPLIER ? 1 : 0);
     _pathPoints.resize(splinePointCount);
 
-    uint32 splinePointIndex = 0;
+    uint32 splineIndex = 0;
     for (uint32 i = 0; i < pointCount; ++i)
     {
-        if (!(i % SMOOTH_PATH_MULTIPLIER) || i == (pointCount - 1)) // Always include the first and final point
+        // We only want every 8th waypoint as well as the first and final point of pathPoints
+        if (i == 0 || !((i + 1) % SMOOTH_PATH_MULTIPLIER) || i == (pointCount - 1))
         {
-            _pathPoints[splinePointIndex] = G3D::Vector3(pathPoints[i*VERTEX_SIZE+2], pathPoints[i*VERTEX_SIZE], pathPoints[i*VERTEX_SIZE+1]);
-            ++splinePointIndex;
+            _pathPoints[splineIndex] = G3D::Vector3(pathPoints[i*VERTEX_SIZE+2], pathPoints[i*VERTEX_SIZE], pathPoints[i*VERTEX_SIZE+1]);
+            ++splineIndex;
         }
     }
 
     NormalizePath();
 
-    // first point is always our current location - we need the next one
+    // Set the actual end position to be our final path point which is at the end of the _pathPoints vector
     SetActualEndPosition(_pathPoints[_pathPoints.size()-1]);
 
     // force the given destination, if needed
